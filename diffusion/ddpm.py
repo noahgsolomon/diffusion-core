@@ -35,15 +35,12 @@ class ConvBlock(nn.Module):
         self.time_mlp = nn.Linear(time_dim, out_channels)
         
     def forward(self, x, t_emb):
-        # First convolution
         h = F.silu(self.norm1(self.conv1(x)))
         
-        # Time embedding
         time_emb = self.time_mlp(t_emb)
         time_emb = time_emb.view(-1, time_emb.shape[1], 1, 1)
         h = h + time_emb
         
-        # Second convolution
         h = F.silu(self.norm2(self.conv2(h)))
         return h
 
