@@ -3,22 +3,27 @@ import torch
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 class TimeEmbedding(nn.Module):
     def __init__(self, time_dim):
         super().__init__()
         self.time_dim = time_dim
-        self.time_embed = nn.Sequential(
-            nn.Linear(1, time_dim),
-            nn.SiLU(),
-            nn.Linear(time_dim, time_dim)
-        )
-    
+        assert time_dim % 2 == 0, "time_dim must be even"
+        
     def forward(self, t):
-        # Create embedding of timestep
+        device = t.device
+        half_dim = self.time_dim // 2
+        
+        emb = math.log(10000) / (half_dim - 1)
+        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        
         t = t.unsqueeze(-1).float()
-        t_embed = self.time_embed(t)
-        return t_embed
+        
+        emb = t * emb
+        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
+        
+        return emb
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, time_dim):
